@@ -82,6 +82,9 @@ namespace
 		typedef BOOL (__stdcall *pfn_BindIoCompletionCallback)(HANDLE FileHandle, LPOVERLAPPED_COMPLETION_ROUTINE Function, ULONG Flags);
 		pfn_BindIoCompletionCallback m_BindIoCompletionCallback;
 
+		typedef BOOLEAN (APIENTRY *pfn_RtlGenRandom)(PVOID, ULONG);
+		pfn_RtlGenRandom m_RtlGenRandom;
+
 		HANDLE  m_hHeap;
 		
 	private:
@@ -140,6 +143,13 @@ namespace
 			instance->m_SleepConditionVariableCS = NULL;
 			instance->m_WakeConditionVariable = impl_WakeConditionVariable;
 			instance->m_WakeAllConditionVariable = impl_WakeAllConditionVariable;
+		}
+
+		if (!instance->m_RtlGenRandom)
+		{
+			HMODULE hADVAPI32 = GetModuleHandleW(L"ADVAPI32.DLL");
+			if (hADVAPI32)
+				instance->m_RtlGenRandom = (pfn_RtlGenRandom)(GetProcAddress(hADVAPI32,"SystemFunction036"));
 		}
 
 		instance->m_hHeap = HeapCreate(0,0,0);
@@ -243,8 +253,10 @@ namespace
 
 	void Win32Thunk::impl_InitializeSRWLock(SRWLOCK* SRWLock)
 	{
-		if (!OOBase::CrtAllocator::allocate_new(*reinterpret_cast<OOBase::Win32::rwmutex_t**>(SRWLock)))
-			OOBase_CallCriticalFailure(ERROR_OUTOFMEMORY);
+		OOBase::Win32::rwmutex_t*& m = *reinterpret_cast<OOBase::Win32::rwmutex_t**>(SRWLock);
+		m = OOBase::CrtAllocator::allocate_new<OOBase::Win32::rwmutex_t>();
+		if (!m)
+			OOBase_CallCriticalFailure(OOBase::system_error());
 	}
 
 	void Win32Thunk::impl_AcquireSRWLockShared(SRWLOCK* SRWLock)
@@ -279,8 +291,10 @@ namespace
 
 	void Win32Thunk::impl_InitializeConditionVariable(CONDITION_VARIABLE* ConditionVariable)
 	{
-		if (!OOBase::CrtAllocator::allocate_new(*reinterpret_cast<OOBase::Win32::condition_variable_t**>(ConditionVariable)))
-			OOBase_CallCriticalFailure(ERROR_OUTOFMEMORY);
+		OOBase::Win32::condition_variable_t*& c = *reinterpret_cast<OOBase::Win32::condition_variable_t**>(ConditionVariable);
+		c = OOBase::CrtAllocator::allocate_new<OOBase::Win32::condition_variable_t>();
+		if (!c)
+			OOBase_CallCriticalFailure(OOBase::system_error());
 	}
 
 	void Win32Thunk::impl_WakeConditionVariable(CONDITION_VARIABLE* ConditionVariable)
@@ -780,9 +794,12 @@ void OOBase::Win32::condition_variable_t::broadcast()
 int OOBase::Win32::detail::wchar_t_to_utf8(const wchar_t* wsz, char* sz, int& len)
 {
 	int len2 = WideCharToMultiByte(CP_UTF8,0,wsz,-1,sz,len,NULL,NULL);
-	if (len2 <= 0 && GetLastError() != ERROR_INSUFFICIENT_BUFFER)
-		return GetLastError();
-	else if (len2 < len)
+	if (len2 <= 0)
+	{
+		if (GetLastError() != ERROR_INSUFFICIENT_BUFFER)
+			return GetLastError();
+	}
+	else if (len2 <= len)
 		return 0;
 
 	len = WideCharToMultiByte(CP_UTF8,0,wsz,-1,NULL,0,NULL,NULL);
@@ -792,13 +809,27 @@ int OOBase::Win32::detail::wchar_t_to_utf8(const wchar_t* wsz, char* sz, int& le
 int OOBase::Win32::detail::utf8_to_wchar_t(const char* sz, wchar_t* wsz, int& len)
 {
 	int len2 = MultiByteToWideChar(CP_UTF8,0,sz,-1,wsz,len);
-	if (len2 <= 0 && GetLastError() != ERROR_INSUFFICIENT_BUFFER)
-		return GetLastError();
-	else if (len2 < len)
+	if (len2 <= 0)
+	{
+		if (GetLastError() != ERROR_INSUFFICIENT_BUFFER)
+			return GetLastError();
+	}
+	else if (len2 <= len)
 		return 0;
 	
 	len = MultiByteToWideChar(CP_UTF8,0,sz,-1,NULL,0);
 	return GetLastError();
+}
+
+int OOBase::random_bytes(void* buffer, size_t len)
+{
+	if (!Win32Thunk::instance().m_RtlGenRandom)
+		return ERROR_INVALID_FUNCTION;
+
+	if (!Win32Thunk::instance().m_RtlGenRandom(buffer,(ULONG)len))
+		return GetLastError();
+
+	return 0;
 }
 
 #if 0

@@ -123,7 +123,7 @@ namespace OOBase
 		class SharedCountAllocInstance : public SharedCountBase
 		{
 		public:
-			SharedCountAllocInstance(AllocatorInstance& alloc, T* p) : m_alloc(alloc), m_ptr(p)
+			SharedCountAllocInstance(AllocatorInstance* alloc, T* p) : m_alloc(*alloc), m_ptr(p)
 			{}
 
 			virtual void dispose()
@@ -157,17 +157,17 @@ namespace OOBase
 			SharedCount(const Allocator*, T* p) : m_impl(NULL)
 			{
 				SharedCountAlloc<T,Allocator>* i = NULL;
-				if (!Allocator::allocate_new(i,p))
-					OOBase_CallCriticalFailure(ERROR_OUTOFMEMORY);
+				if (!Allocator::allocate_new_ref(i,p))
+					OOBase_CallCriticalFailure(system_error());
 				m_impl = i;
 			}
 
 			template <typename T>
 			SharedCount(AllocatorInstance& alloc, T* p) : m_impl(NULL)
 			{
-				SharedCountAllocInstance<T>* i = NULL;
-				if (!alloc.allocate_new(i,Ref<AllocatorInstance>(alloc),p))
-					OOBase_CallCriticalFailure(ERROR_OUTOFMEMORY);
+				SharedCountAllocInstance<T>* i = alloc.allocate_new<SharedCountAllocInstance<T> >(&alloc,p);
+				if (!i)
+					OOBase_CallCriticalFailure(system_error());
 				m_impl = i;
 			}
 
@@ -652,6 +652,258 @@ namespace OOBase
 		return s1.get() >= s2.get();
 	}
 
+	template<class T1, class T2>
+	inline bool operator == (const SharedPtr<T1>& s1, const WeakPtr<T2>& s2)
+	{
+		return s1.get() == s2.lock().get();
+	}
+
+	template<class T1, class T2>
+	inline bool operator != (const SharedPtr<T1>& s1, const WeakPtr<T2>& s2)
+	{
+		return s1.get() != s2.lock().get();
+	}
+
+	template<class T1, class T2>
+	inline bool operator < (const SharedPtr<T1>& s1, const WeakPtr<T2>& s2)
+	{
+		return s1.get() < s2.lock().get();
+	}
+
+	template<class T1, class T2>
+	inline bool operator <= (const SharedPtr<T1>& s1, const WeakPtr<T2>& s2)
+	{
+		return s1.get() <= s2.lock().get();
+	}
+
+	template<class T1, class T2>
+	inline bool operator > (const SharedPtr<T1>& s1, const WeakPtr<T2>& s2)
+	{
+		return s1.get() > s2.lock().get();
+	}
+
+	template<class T1, class T2>
+	inline bool operator >= (const SharedPtr<T1>& s1, const WeakPtr<T2>& s2)
+	{
+		return s1.get() >= s2.lock().get();
+	}
+
+	template<class T1, class T2>
+	inline bool operator == (const WeakPtr<T1>& s1, const WeakPtr<T2>& s2)
+	{
+		return s1.lock().get() == s2.lock().get();
+	}
+
+	template<class T1, class T2>
+	inline bool operator != (const WeakPtr<T1>& s1, const WeakPtr<T2>& s2)
+	{
+		return s1.lock().get() != s2.lock().get();
+	}
+
+	template<class T1, class T2>
+	inline bool operator < (const WeakPtr<T1>& s1, const WeakPtr<T2>& s2)
+	{
+		return s1.lock().get() < s2.lock().get();
+	}
+
+	template<class T1, class T2>
+	inline bool operator <= (const WeakPtr<T1>& s1, const WeakPtr<T2>& s2)
+	{
+		return s1.lock().get() <= s2.lock().get();
+	}
+
+	template<class T1, class T2>
+	inline bool operator > (const WeakPtr<T1>& s1, const WeakPtr<T2>& s2)
+	{
+		return s1.lock().get() > s2.lock().get();
+	}
+
+	template<class T1, class T2>
+	inline bool operator >= (const WeakPtr<T1>& s1, const WeakPtr<T2>& s2)
+	{
+		return s1.lock().get() >= s2.lock().get();
+	}
+
+	template<class T1, class T2>
+	inline bool operator == (const WeakPtr<T1>& s1, const SharedPtr<T2>& s2)
+	{
+		return s1.lock().get() == s2.get();
+	}
+
+	template<class T1, class T2>
+	inline bool operator != (const WeakPtr<T1>& s1, const SharedPtr<T2>& s2)
+	{
+		return s1.lock().get() != s2.get();
+	}
+
+	template<class T1, class T2>
+	inline bool operator < (const WeakPtr<T1>& s1, const SharedPtr<T2>& s2)
+	{
+		return s1.lock().get() < s2.get();
+	}
+
+	template<class T1, class T2>
+	inline bool operator <= (const WeakPtr<T1>& s1, const SharedPtr<T2>& s2)
+	{
+		return s1.lock().get() <= s2.get();
+	}
+
+	template<class T1, class T2>
+	inline bool operator > (const WeakPtr<T1>& s1, const SharedPtr<T2>& s2)
+	{
+		return s1.lock().get() > s2.get();
+	}
+
+	template<class T1, class T2>
+	inline bool operator >= (const WeakPtr<T1>& s1, const SharedPtr<T2>& s2)
+	{
+		return s1.lock().get() >= s2.get();
+	}
+
+	template<class T1, class T2>
+	inline bool operator == (const SharedPtr<T1>& s1, T2* const s2)
+	{
+		return s1.get() == s2;
+	}
+
+	template<class T1, class T2>
+	inline bool operator != (const SharedPtr<T1>& s1, T2* const s2)
+	{
+		return s1.get() != s2;
+	}
+
+	template<class T1, class T2>
+	inline bool operator < (const SharedPtr<T1>& s1, T2* const s2)
+	{
+		return s1.get() < s2;
+	}
+
+	template<class T1, class T2>
+	inline bool operator <= (const SharedPtr<T1>& s1, T2* const s2)
+	{
+		return s1.get() <= s2;
+	}
+
+	template<class T1, class T2>
+	inline bool operator > (const SharedPtr<T1>& s1, T2* const s2)
+	{
+		return s1.get() > s2;
+	}
+
+	template<class T1, class T2>
+	inline bool operator >= (const SharedPtr<T1>& s1, T2* const s2)
+	{
+		return s1.get() >= s2;
+	}
+
+	template<class T1, class T2>
+	inline bool operator == (T1* const s1, const SharedPtr<T2>& s2)
+	{
+		return s1 == s2.get();
+	}
+
+	template<class T1, class T2>
+	inline bool operator != (T1* const s1, const SharedPtr<T2>& s2)
+	{
+		return s1 != s2.get();
+	}
+
+	template<class T1, class T2>
+	inline bool operator < (T1* const s1, const SharedPtr<T2>& s2)
+	{
+		return s1 < s2.get();
+	}
+
+	template<class T1, class T2>
+	inline bool operator <= (T1* const s1, const SharedPtr<T2>& s2)
+	{
+		return s1 <= s2.get();
+	}
+
+	template<class T1, class T2>
+	inline bool operator > (T1* const s1, const SharedPtr<T2>& s2)
+	{
+		return s1 > s2.get();
+	}
+
+	template<class T1, class T2>
+	inline bool operator >= (T1* const s1, const SharedPtr<T2>& s2)
+	{
+		return s1 >= s2.get();
+	}
+
+	template<class T1, class T2>
+	inline bool operator == (const WeakPtr<T1>& s1, T2* const s2)
+	{
+		return s1.lock().get() == s2;
+	}
+
+	template<class T1, class T2>
+	inline bool operator != (const WeakPtr<T1>& s1, T2* const s2)
+	{
+		return s1.lock().get() != s2;
+	}
+
+	template<class T1, class T2>
+	inline bool operator < (const WeakPtr<T1>& s1, T2* const s2)
+	{
+		return s1.lock().get() < s2;
+	}
+
+	template<class T1, class T2>
+	inline bool operator <= (const WeakPtr<T1>& s1, T2* const s2)
+	{
+		return s1.lock().get() <= s2;
+	}
+
+	template<class T1, class T2>
+	inline bool operator > (const WeakPtr<T1>& s1, T2* const s2)
+	{
+		return s1.lock().get() > s2;
+	}
+
+	template<class T1, class T2>
+	inline bool operator >= (const WeakPtr<T1>& s1, T2* const s2)
+	{
+		return s1.lock().get() >= s2;
+	}
+
+	template<class T1, class T2>
+	inline bool operator == (T1* const s1, const WeakPtr<T2>& s2)
+	{
+		return s1 == s2.lock().get();
+	}
+
+	template<class T1, class T2>
+	inline bool operator != (T1* const s1, const WeakPtr<T2>& s2)
+	{
+		return s1 != s2.lock().get();
+	}
+
+	template<class T1, class T2>
+	inline bool operator < (T1* const s1, const WeakPtr<T2>& s2)
+	{
+		return s1 < s2.lock().get();
+	}
+
+	template<class T1, class T2>
+	inline bool operator <= (T1* const s1, const WeakPtr<T2>& s2)
+	{
+		return s1 <= s2.lock().get();
+	}
+
+	template<class T1, class T2>
+	inline bool operator > (T1* const s1, const WeakPtr<T2>& s2)
+	{
+		return s1 > s2.lock().get();
+	}
+
+	template<class T1, class T2>
+	inline bool operator >= (T1* const s1, const WeakPtr<T2>& s2)
+	{
+		return s1 >= s2.lock().get();
+	}
+
 	template <typename T, typename Allocator>
 	inline SharedPtr<T> make_shared(T* p)
 	{
@@ -680,7 +932,7 @@ namespace OOBase
 	inline SharedPtr<T> allocate_shared()
 	{
 		T* p = NULL;
-		Allocator::allocate_new(p);
+		Allocator::allocate_new_ref(p);
 		return make_shared<T,Allocator>(p);
 	}
 
@@ -691,141 +943,141 @@ namespace OOBase
 	}
 
 	template <typename T, typename Allocator, typename P1>
-	inline SharedPtr<T> allocate_shared(const P1& p1)
+	inline SharedPtr<T> allocate_shared(P1 p1)
 	{
 		T* p = NULL;
-		Allocator::allocate_new(p,p1);
+		Allocator::allocate_new_ref(p,p1);
 		return make_shared<T,Allocator>(p);
 	}
 
 	template <typename T, typename P1>
-	inline SharedPtr<T> allocate_shared(const P1& p1)
+	inline SharedPtr<T> allocate_shared(P1 p1)
 	{
 		return allocate_shared<T,CrtAllocator>(p1);
 	}
 
 	template <typename T, typename Allocator, typename P1, typename P2>
-	inline SharedPtr<T> allocate_shared(const P1& p1, const P2& p2)
+	inline SharedPtr<T> allocate_shared(P1 p1, P2 p2)
 	{
 		T* p = NULL;
-		Allocator::allocate_new(p,p1,p2);
+		Allocator::allocate_new_ref(p,p1,p2);
 		return make_shared<T,Allocator>(p);
 	}
 
 	template <typename T, typename P1, typename P2>
-	inline SharedPtr<T> allocate_shared(const P1& p1, const P2& p2)
+	inline SharedPtr<T> allocate_shared(P1 p1, P2 p2)
 	{
 		return allocate_shared<T,CrtAllocator>(p1,p2);
 	}
 
 	template <typename T, typename Allocator, typename P1, typename P2, typename P3>
-	inline SharedPtr<T> allocate_shared(const P1& p1, const P2& p2, const P3& p3)
+	inline SharedPtr<T> allocate_shared(P1 p1, P2 p2, P3 p3)
 	{
 		T* p = NULL;
-		Allocator::allocate_new(p,p1,p2,p3);
+		Allocator::allocate_new_ref(p,p1,p2,p3);
 		return make_shared<T,Allocator>(p);
 	}
 
 	template <typename T, typename P1, typename P2, typename P3>
-	inline SharedPtr<T> allocate_shared(const P1& p1, const P2& p2, const P3& p3)
+	inline SharedPtr<T> allocate_shared(P1 p1, P2 p2, P3 p3)
 	{
 		return allocate_shared<T,CrtAllocator>(p1,p2,p3);
 	}
 
 	template <typename T, typename Allocator, typename P1, typename P2, typename P3, typename P4>
-	inline SharedPtr<T> allocate_shared(const P1& p1, const P2& p2, const P3& p3, const P4& p4)
+	inline SharedPtr<T> allocate_shared(P1 p1, P2 p2, P3 p3, P4 p4)
 	{
 		T* p = NULL;
-		Allocator::allocate_new(p,p1,p2,p3,p4);
+		Allocator::allocate_new_ref(p,p1,p2,p3,p4);
 		return make_shared<T,Allocator>(p);
 	}
 
 	template <typename T, typename P1, typename P2, typename P3, typename P4>
-	inline SharedPtr<T> allocate_shared(const P1& p1, const P2& p2, const P3& p3, const P4& p4)
+	inline SharedPtr<T> allocate_shared(P1 p1, P2 p2, P3 p3, P4 p4)
 	{
 		return allocate_shared<T,CrtAllocator>(p1,p2,p3,p4);
 	}
 
 	template <typename T, typename Allocator, typename P1, typename P2, typename P3, typename P4, typename P5>
-	inline SharedPtr<T> allocate_shared(const P1& p1, const P2& p2, const P3& p3, const P4& p4, const P5& p5)
+	inline SharedPtr<T> allocate_shared(P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
 	{
 		T* p = NULL;
-		Allocator::allocate_new(p,p1,p2,p3,p4,p5);
+		Allocator::allocate_new_ref(p,p1,p2,p3,p4,p5);
 		return make_shared<T,Allocator>(p);
 	}
 
 	template <typename T, typename P1, typename P2, typename P3, typename P4, typename P5>
-	inline SharedPtr<T> allocate_shared(const P1& p1, const P2& p2, const P3& p3, const P4& p4, const P5& p5)
+	inline SharedPtr<T> allocate_shared(P1 p1, P2 p2, P3 p3, P4 p4, P5 p5)
 	{
 		return allocate_shared<T,CrtAllocator>(p1,p2,p3,p4,p5);
 	}
 
 	template <typename T, typename Allocator, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6>
-	inline SharedPtr<T> allocate_shared(const P1& p1, const P2& p2, const P3& p3, const P4& p4, const P5& p5, const P6& p6)
+	inline SharedPtr<T> allocate_shared(P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
 	{
 		T* p = NULL;
-		Allocator::allocate_new(p,p1,p2,p3,p4,p5,p6);
+		Allocator::allocate_new_ref(p,p1,p2,p3,p4,p5,p6);
 		return make_shared<T,Allocator>(p);
 	}
 
 	template <typename T, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6>
-	inline SharedPtr<T> allocate_shared(const P1& p1, const P2& p2, const P3& p3, const P4& p4, const P5& p5, const P6& p6)
+	inline SharedPtr<T> allocate_shared(P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6)
 	{
 		return allocate_shared<T,CrtAllocator>(p1,p2,p3,p4,p5,p6);
 	}
 
 	template <typename T, typename Allocator, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7>
-	inline SharedPtr<T> allocate_shared(const P1& p1, const P2& p2, const P3& p3, const P4& p4, const P5& p5, const P6& p6, const P7& p7)
+	inline SharedPtr<T> allocate_shared(P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6, P7 p7)
 	{
 		T* p = NULL;
-		Allocator::allocate_new(p,p1,p2,p3,p4,p5,p6,p7);
+		Allocator::allocate_new_ref(p,p1,p2,p3,p4,p5,p6,p7);
 		return make_shared<T,Allocator>(p);
 	}
 
 	template <typename T, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7>
-	inline SharedPtr<T> allocate_shared(const P1& p1, const P2& p2, const P3& p3, const P4& p4, const P5& p5, const P6& p6, const P7& p7)
+	inline SharedPtr<T> allocate_shared(P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6, P7 p7)
 	{
 		return allocate_shared<T,CrtAllocator>(p1,p2,p3,p4,p5,p6,p7);
 	}
 
 	template <typename T, typename Allocator, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7, typename P8>
-	inline SharedPtr<T> allocate_shared(const P1& p1, const P2& p2, const P3& p3, const P4& p4, const P5& p5, const P6& p6, const P7& p7, const P8& p8)
+	inline SharedPtr<T> allocate_shared(P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6, P7 p7, P8 p8)
 	{
 		T* p = NULL;
-		Allocator::allocate_new(p,p1,p2,p3,p4,p5,p6,p7,p8);
+		Allocator::allocate_new_ref(p,p1,p2,p3,p4,p5,p6,p7,p8);
 		return make_shared<T,Allocator>(p);
 	}
 
 	template <typename T, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7, typename P8>
-	inline SharedPtr<T> allocate_shared(const P1& p1, const P2& p2, const P3& p3, const P4& p4, const P5& p5, const P6& p6, const P7& p7, const P8& p8)
+	inline SharedPtr<T> allocate_shared(P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6, P7 p7, P8 p8)
 	{
 		return allocate_shared<T,CrtAllocator>(p1,p2,p3,p4,p5,p6,p7,p8);
 	}
 
 	template <typename T, typename Allocator, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7, typename P8, typename P9>
-	inline SharedPtr<T> allocate_shared(const P1& p1, const P2& p2, const P3& p3, const P4& p4, const P5& p5, const P6& p6, const P7& p7, const P8& p8, const P9& p9)
+	inline SharedPtr<T> allocate_shared(P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6, P7 p7, P8 p8, P9 p9)
 	{
 		T* p = NULL;
-		Allocator::allocate_new(p,p1,p2,p3,p4,p5,p6,p7,p8,p9);
+		Allocator::allocate_new_ref(p,p1,p2,p3,p4,p5,p6,p7,p8,p9);
 		return make_shared<T,Allocator>(p);
 	}
 
 	template <typename T, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7, typename P8, typename P9>
-	inline SharedPtr<T> allocate_shared(const P1& p1, const P2& p2, const P3& p3, const P4& p4, const P5& p5, const P6& p6, const P7& p7, const P8& p8, const P9& p9)
+	inline SharedPtr<T> allocate_shared(P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6, P7 p7, P8 p8, P9 p9)
 	{
 		return allocate_shared<T,CrtAllocator>(p1,p2,p3,p4,p5,p6,p7,p8,p9);
 	}
 
 	template <typename T, typename Allocator, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7, typename P8, typename P9, typename P10>
-	inline SharedPtr<T> allocate_shared(const P1& p1, const P2& p2, const P3& p3, const P4& p4, const P5& p5, const P6& p6, const P7& p7, const P8& p8, const P9& p9, const P10& p10)
+	inline SharedPtr<T> allocate_shared(P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6, P7 p7, P8 p8, P9 p9, P10 p10)
 	{
 		T* p = NULL;
-		Allocator::allocate_new(p,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10);
+		Allocator::allocate_new_ref(p,p1,p2,p3,p4,p5,p6,p7,p8,p9,p10);
 		return make_shared<T,Allocator>(p);
 	}
 
 	template <typename T, typename P1, typename P2, typename P3, typename P4, typename P5, typename P6, typename P7, typename P8, typename P9, typename P10>
-	inline SharedPtr<T> allocate_shared(const P1& p1, const P2& p2, const P3& p3, const P4& p4, const P5& p5, const P6& p6, const P7& p7, const P8& p8, const P9& p9, const P10& p10)
+	inline SharedPtr<T> allocate_shared(P1 p1, P2 p2, P3 p3, P4 p4, P5 p5, P6 p6, P7 p7, P8 p8, P9 p9, P10 p10)
 	{
 		return allocate_shared<T,CrtAllocator>(p1,p2,p3,p4,p5,p6,p7,p8,p9,p10);
 	}

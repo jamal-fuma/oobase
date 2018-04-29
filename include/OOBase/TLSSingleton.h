@@ -39,7 +39,7 @@ namespace OOBase
 		static T* instance_ptr()
 		{
 			void* inst = NULL;
-			if (!TLS::Get(&s_sentinal,&inst))
+			if (!TLS::Get(reinterpret_cast<void*>(&init),&inst))
 				inst = init();
 
 			return static_cast<T*>(inst);
@@ -55,21 +55,16 @@ namespace OOBase
 		}
 
 	private:
-		static const int s_sentinal;
-
 		static void* init()
 		{
 			// We do this long-hand so T can friend us
 			void* t = ThreadLocalAllocator::allocate(sizeof(T),alignment_of<T>::value);
 			if (!t)
-				OOBase_CallCriticalFailure(ERROR_OUTOFMEMORY);
+				OOBase_CallCriticalFailure(system_error());
 
 			// Add destructor before calling constructor
-			if (!TLS::Set(&s_sentinal,t,&destroy))
-			{
-				ThreadLocalAllocator::free(t);
-				OOBase_CallCriticalFailure(ERROR_OUTOFMEMORY);
-			}
+			if (!TLS::Set(reinterpret_cast<void*>(&init),t,&destroy))
+				OOBase_CallCriticalFailure(system_error());
 
 #if defined(OOBASE_HAVE_EXCEPTIONS)
 			try
@@ -93,9 +88,6 @@ namespace OOBase
 				ThreadLocalAllocator::delete_free(static_cast<T*>(p));
 		}
 	};
-
-	template <typename T, typename DLL>
-	const int TLSSingleton<T,DLL>::s_sentinal = 1;
 }
 
 #endif // OOBASE_TLS_SINGLETON_H_INCLUDED_

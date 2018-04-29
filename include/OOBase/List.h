@@ -35,7 +35,7 @@ namespace OOBase
 		struct ListNode
 		{
 			template <typename T1>
-			ListNode(ListNode* prev, ListNode* next, const T1& data) :
+			ListNode(ListNode* prev, ListNode* next, T1 data) :
 				m_prev(prev), m_next(next), m_data(data)
 			{}
 
@@ -84,18 +84,18 @@ namespace OOBase
 			return m_size;
 		}
 
-		iterator insert(const T& value, const iterator& before)
+		iterator insert(typename call_traits<T>::param_type value, const iterator& before)
 		{
 			assert(before.check(this));
 			return iterator(this,insert_before(value,before.deref()));
 		}
 
-		iterator push_back(const T& value)
+		iterator push_back(typename call_traits<T>::param_type value)
 		{
 			return iterator(this,insert_tail(value));
 		}
 
-		iterator push_front(const T& value)
+		iterator push_front(typename call_traits<T>::param_type value)
 		{
 			return iterator(this,insert_head(value));
 		}
@@ -234,10 +234,10 @@ namespace OOBase
 			return r;
 		}
 
-		ListNode* insert_before(const T& value, ListNode* before)
+		ListNode* insert_before(typename call_traits<T>::param_type value, ListNode* before)
 		{
 			ListNode* new_node = NULL;
-			if (!baseClass::allocate_new(new_node,before->m_prev,before,value))
+			if (!baseClass::allocate_new_ref(new_node,before->m_prev,before,value))
 				return NULL;
 
 			if (!before->m_prev)
@@ -251,14 +251,14 @@ namespace OOBase
 			return new_node;
 		}
 
-		ListNode* insert_head(const T& value)
+		ListNode* insert_head(typename call_traits<T>::param_type value)
 		{
 			if (m_head)
 				return insert_before(value,m_head);
 
 			ListNode* null = NULL;
 			ListNode* new_node = NULL;
-			if (!baseClass::allocate_new(new_node,null,null,value))
+			if (!baseClass::allocate_new_ref(new_node,null,null,value))
 				return NULL;
 
 			m_head = new_node;
@@ -268,14 +268,14 @@ namespace OOBase
 			return new_node;
 		}
 
-		ListNode* insert_tail(const T& value)
+		ListNode* insert_tail(typename call_traits<T>::param_type value)
 		{
 			if (!m_tail)
 				return insert_head(value);
 
 			ListNode* null = NULL;
 			ListNode* new_node = NULL;
-			if (!baseClass::allocate_new(new_node,m_tail,null,value))
+			if (!baseClass::allocate_new_ref(new_node,m_tail,null,value))
 				return NULL;
 
 			m_tail->m_next = new_node;

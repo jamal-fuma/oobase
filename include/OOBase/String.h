@@ -56,7 +56,7 @@ namespace OOBase
 				return 0;
 
 			if (!ptr.resize(static_cast<size_t>(r) + 1))
-				return ERROR_OUTOFMEMORY;
+				return system_error();
 		}
 	}
 
@@ -327,16 +327,28 @@ namespace OOBase
 			return compare(rhs.c_str());
 		}
 
+		template <typename A2>
+		int compare(const SharedString<A2>& rhs) const
+		{
+			return compare(rhs.c_str());
+		}
+
+		template <typename A2>
+		int compare(const ScopedStringImpl<A2>& rhs) const
+		{
+			return (m_ptr ? m_ptr->compare(rhs) : compare(rhs.c_str()));
+		}
+
 		bool assign(const char* sz, size_t len = npos)
 		{
-			node_t ptr = new_node();
-			if (!ptr)
-				return false;
+			if (sz && len)
+			{
+				node_t ptr = new_node();
+				if (!ptr || !ptr->assign(sz,len))
+					return false;
 
-			if (sz && len && !ptr->assign(sz,len))
-				return false;
-
-			m_ptr.swap(ptr);
+				m_ptr.swap(ptr);
+			}
 			return true;
 		}
 
@@ -376,14 +388,14 @@ namespace OOBase
 		operator ScopedStringImpl<Allocator>& ()
 		{
 			if (!m_ptr && !(m_ptr = new_node()))
-				OOBase_CallCriticalFailure(ERROR_OUTOFMEMORY);
+				OOBase_CallCriticalFailure(system_error());
 
 			return *m_ptr;
 		}
 
 		char operator [](ptrdiff_t i) const
 		{
-			return m_ptr->operator [](i);
+			return !m_ptr ? 0 : m_ptr->operator [](i);
 		}
 
 		bool empty() const
@@ -427,7 +439,7 @@ namespace OOBase
 		{
 			node_t ptr;
 			if (!clone_node(ptr,m_ptr))
-				return ERROR_OUTOFMEMORY;
+				return system_error();
 
 			int err = ptr->vprintf(format,args);
 			if (err != 0)
@@ -442,7 +454,7 @@ namespace OOBase
 		{
 			node_t ptr;
 			if (!clone_node(ptr,m_ptr))
-				return ERROR_OUTOFMEMORY;
+				return system_error();
 
 			int err = ptr->wchar_t_to_utf8(wsz);
 			if (err != 0)

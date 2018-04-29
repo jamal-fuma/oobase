@@ -111,7 +111,7 @@ namespace OOBase
 			return r;
 		}
 
-		iterator insert(const K& key, const V& value)
+		iterator insert(typename call_traits<K>::param_type key, typename call_traits<V>::param_type value)
 		{
 			return insert(OOBase::make_pair(key,value));
 		}
@@ -180,20 +180,13 @@ namespace OOBase
 		}
 
 		template <typename K1>
-		bool find(const K1& key, V& value) const
+		bool find_first(const K1& key, V& val) const
 		{
-			const Pair<K,V>* p = bsearch(key);
-			if (!p || p->first != key)
+			const_iterator i = find(key);
+			if (!i)
 				return false;
 
-			// Scan for the first
-			while (p && p > this->m_data && (p-1)->first == key)
-				--p;
-
-			if (!p)
-				return false;
-
-			value = p->second;
+			val = i->second;
 			return true;
 		}
 

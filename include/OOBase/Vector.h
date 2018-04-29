@@ -24,6 +24,7 @@
 
 #include "Memory.h"
 #include "Iterator.h"
+#include "Random.h"
 
 namespace OOBase
 {
@@ -53,7 +54,7 @@ namespace OOBase
 				baseClass::swap(rhs);
 				OOBase::swap(m_data,rhs.m_data);
 				OOBase::swap(m_size,rhs.m_size);
-				OOBase::swap(m_capacity,rhs.m_size);
+				OOBase::swap(m_capacity,rhs.m_capacity);
 			}
 
 			bool empty() const
@@ -124,7 +125,7 @@ namespace OOBase
 				if (rhs.m_size)
 				{
 					if (!reserve(rhs.m_size))
-						OOBase_CallCriticalFailure(ERROR_OUTOFMEMORY);
+						OOBase_CallCriticalFailure(system_error());
 					else
 					{
 						for (size_t i=0;i<rhs.m_size;++i)
@@ -142,7 +143,7 @@ namespace OOBase
 				if (rhs.m_size)
 				{
 					if (!reserve(rhs.m_size))
-						OOBase_CallCriticalFailure(ERROR_OUTOFMEMORY);
+						OOBase_CallCriticalFailure(system_error());
 					else
 					{
 						for (size_t i=0;i<rhs.m_size;++i)
@@ -208,7 +209,12 @@ namespace OOBase
 				return true;
 			}
 
-			bool assign(size_t n, const T& value = T())
+			bool assign(size_t n)
+			{
+				return assign(n,T());
+			}
+
+			bool assign(size_t n, typename call_traits<T>::param_type value)
 			{
 				if (n > this->m_capacity)
 				{
@@ -236,7 +242,7 @@ namespace OOBase
 				return true;
 			}
 
-			bool insert_at(size_t& pos, const T& value)
+			bool insert_at(size_t& pos, typename call_traits<T>::param_type value)
 			{
 				if (pos > this->m_size)
 					pos = this->m_size;
@@ -343,7 +349,7 @@ namespace OOBase
 				if (rhs.m_size)
 				{
 					if (!reserve(rhs.m_size))
-						OOBase_CallCriticalFailure(ERROR_OUTOFMEMORY);
+						OOBase_CallCriticalFailure(system_error());
 					else
 					{
 						memcpy(this->m_data,rhs.m_data,rhs.m_size*sizeof(T));
@@ -358,7 +364,7 @@ namespace OOBase
 				if (rhs.m_size)
 				{
 					if (!reserve(rhs.m_size))
-						OOBase_CallCriticalFailure(ERROR_OUTOFMEMORY);
+						OOBase_CallCriticalFailure(system_error());
 					else
 					{
 						memcpy(this->m_data,rhs.m_data,rhs.m_size*sizeof(T));
@@ -369,7 +375,12 @@ namespace OOBase
 			}
 
 		protected:
-			bool assign(size_t n, const T& value = T())
+			bool assign(size_t n)
+			{
+				return assign(n,T());
+			}
+
+			bool assign(size_t n, typename call_traits<T>::param_type value)
 			{
 				if (!reserve(n))
 					return false;
@@ -396,7 +407,7 @@ namespace OOBase
 				return true;
 			}
 
-			bool insert_at(size_t& pos, const T& value)
+			bool insert_at(size_t& pos, typename call_traits<T>::param_type value)
 			{
 				if (pos > this->m_size)
 					pos = this->m_size;
@@ -476,31 +487,7 @@ namespace OOBase
 				return this->m_data;
 			}
 
-			T& front()
-			{
-				assert(baseClass::at(0));
-				return *baseClass::at(0);
-			}
-
-			const_reference front() const
-			{
-				assert(baseClass::at(0));
-				return *baseClass::at(0);
-			}
-
-			T& back()
-			{
-				assert(baseClass::at(this->m_size-1));
-				return *baseClass::at(this->m_size-1);
-			}
-
-			const_reference back() const
-			{
-				assert(baseClass::at(this->m_size-1));
-				return *baseClass::at(this->m_size-1);
-			}
-
-			bool push_back(const T& value)
+			bool push_back(typename call_traits<T>::param_type value)
 			{
 				return baseClass::insert_at(this->m_size,value);
 			}
@@ -509,6 +496,18 @@ namespace OOBase
 			{
 				baseClass::remove_at(this->m_size - 1,1);
 				return !baseClass::empty();
+			}
+
+			void shuffle(Random& random)
+			{
+				if (this->m_size > 1)
+				{
+					for (size_t i = 0;i < this->m_size - 1; ++i)
+					{
+						size_t r = random.next<size_t>(i,this->m_size);
+						OOBase::swap(this->m_data[i],this->m_data[r]);
+					}
+				}
 			}
 		};
 	}
@@ -562,7 +561,12 @@ namespace OOBase
 			return baseClass::assign(first,last);
 		}
 
-		bool assign(size_t n, const T& value = T())
+		bool assign(size_t n)
+		{
+			return assign(n,T());
+		}
+
+		bool assign(size_t n, typename call_traits<T>::param_type value)
 		{
 			return baseClass::assign(n,value);
 		}
@@ -572,7 +576,7 @@ namespace OOBase
 			return baseClass::reserve(n);
 		}
 
-		T* data()
+		pointer data()
 		{
 			return baseClass::data();
 		}
@@ -582,27 +586,7 @@ namespace OOBase
 			return baseClass::data();
 		}
 
-		T& front()
-		{
-			return baseClass::front();
-		}
-
-		const_reference front() const
-		{
-			return baseClass::front();
-		}
-
-		T& back()
-		{
-			return baseClass::back();
-		}
-
-		const_reference back() const
-		{
-			return baseClass::back();
-		}
-
-		bool resize(size_t new_size, const T& value)
+		bool resize(size_t new_size, typename call_traits<T>::param_type value)
 		{
 			bool ret = reserve(new_size);
 			while (this->m_size < new_size && ret)
@@ -617,7 +601,7 @@ namespace OOBase
 			return resize(new_size,T());
 		}
 
-		iterator push_back(const T& value)
+		iterator push_back(typename call_traits<T>::param_type value)
 		{
 			return baseClass::push_back(value) ? iterator(this,this->m_size-1) : m_end;
 		}
@@ -627,13 +611,13 @@ namespace OOBase
 			return baseClass::pop_back();
 		}
 
-		iterator insert(const T& value, const iterator& before)
+		iterator insert(typename call_traits<T>::param_type value, const iterator& before)
 		{
 			assert(before.check(this));
 			return insert(value,before.deref());
 		}
 
-		iterator insert(const T& value, size_t before)
+		iterator insert(typename call_traits<T>::param_type value, size_t before)
 		{
 			return baseClass::insert_at(before,value) ? iterator(this,before) : m_end;
 		}
@@ -665,7 +649,8 @@ namespace OOBase
 			return iterator(this,baseClass::remove_at(first,count));
 		}
 
-		size_t erase(const T& value)
+		template <typename T1>
+		size_t remove(const T1& value)
 		{
 			size_t ret = 0;
 			for (size_t pos = 0;pos < this->m_size;)
@@ -679,6 +664,24 @@ namespace OOBase
 					++pos;
 			}
 			return ret;
+		}
+
+		template <typename T1>
+		bool exists(const T1& value) const
+		{
+			return find_i(value) != size_t(-1);
+		}
+
+		template <typename T1>
+		iterator find(const T1& value)
+		{
+			return iterator(this,find_i(value));
+		}
+
+		template <typename T1>
+		const_iterator find(const T1& value) const
+		{
+			return const_iterator(this,find_i(value));
 		}
 
 		iterator position(size_t pos)
@@ -734,6 +737,16 @@ namespace OOBase
 			return cbegin();
 		}
 
+		iterator back()
+		{
+			return (this->m_size ? iterator(this,this->m_size-1) : m_end);
+		}
+
+		const_iterator back() const
+		{
+			return (this->m_size ? const_iterator(this,this->m_size-1) : m_cend);
+		}
+
 		const iterator& end()
 		{
 			return m_end;
@@ -749,9 +762,25 @@ namespace OOBase
 			return m_cend;
 		}
 
+		void shuffle(Random& random)
+		{
+			baseClass::shuffle(random);
+		}
+
 	private:
 		iterator m_end;
 		const_iterator m_cend;
+
+		template <typename T1>
+		size_t find_i(const T1& value) const
+		{
+			for (size_t pos = 0;pos < this->m_size;++pos)
+			{
+				if (this->m_data[pos] == value)
+					return pos;
+			}
+			return size_t(-1);
+		}
 	};
 }
 

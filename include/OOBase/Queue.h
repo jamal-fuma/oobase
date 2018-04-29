@@ -129,13 +129,13 @@ namespace OOBase
 				{
 					if (!push(rhs.m_data[pos]))
 					{
-						OOBase_CallCriticalFailure(ERROR_OUTOFMEMORY);
+						OOBase_CallCriticalFailure(system_error());
 						break;
 					}
 				}
 			}
 
-			bool push(const T& val)
+			bool push(typename call_traits<T>::param_type val)
 			{
 				if (this->m_capacity == 0 || baseClass::size() == (this->m_capacity - 1))
 				{
@@ -225,7 +225,7 @@ namespace OOBase
 			{
 				this->m_data = static_cast<T*>(baseClass::allocate(rhs.m_data,rhs.m_capacity*sizeof(T),alignment_of<T>::value));
 				if (!this->m_data)
-					OOBase_CallCriticalFailure(ERROR_OUTOFMEMORY);
+					OOBase_CallCriticalFailure(system_error());
 				else
 				{
 					memcpy(this->m_data,rhs.m_data,rhs.m_capacity*sizeof(T));
@@ -235,7 +235,7 @@ namespace OOBase
 				}
 			}
 
-			bool push(const T& val)
+			bool push(typename call_traits<T>::param_type val)
 			{
 				if (this->m_capacity == 0 || baseClass::size() == (this->m_capacity - 1))
 				{

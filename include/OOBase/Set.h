@@ -45,7 +45,7 @@ namespace OOBase
 		typedef detail::IteratorImpl<const Set,const value_type,size_t> const_iterator;
 		friend class detail::IteratorImpl<const Set,const value_type,size_t>;
 
-		Set(const Compare& comp) : baseClass(), m_compare(comp), m_end(NULL,size_t(-1)), m_cend(NULL,size_t(-1))
+		Set(const Compare& comp = Compare()) : baseClass(), m_compare(comp), m_end(NULL,size_t(-1)), m_cend(NULL,size_t(-1))
 		{
 			iterator(this,size_t(-1)).swap(m_end);
 			const_iterator(this,size_t(-1)).swap(m_cend);
@@ -92,7 +92,7 @@ namespace OOBase
 			return true;
 		}
 
-		iterator insert(const T& value)
+		iterator insert(typename call_traits<T>::param_type value)
 		{
 			size_t start = 0;
 			for (size_t end = this->m_size;start < end;)
@@ -144,29 +144,13 @@ namespace OOBase
 		template <typename T1>
 		iterator find(const T1& value)
 		{
-			const T* p = bsearch(value);
-			if (!p || *p != value)
-				return m_end;
-
-			// Scan for the first
-			while (p && p > this->m_data && *(p-1) == value)
-				--p;
-
-			return (p ? iterator(this,static_cast<size_t>(p - this->m_data)) : m_end);
+			return iterator(this,find_i(value));
 		}
 
 		template <typename T1>
 		const_iterator find(const T1& value) const
 		{
-			const T* p = bsearch(value);
-			if (!p || *p != value)
-				return m_cend;
-
-			// Scan for the first
-			while (p && p > this->m_data && *(p-1) == value)
-				--p;
-
-			return (p ? const_iterator(this,static_cast<size_t>(p - this->m_data)) : m_cend);
+			return const_iterator(this,find_i(value));
 		}
 
 		iterator begin()
@@ -176,7 +160,7 @@ namespace OOBase
 
 		const_iterator cbegin() const
 		{
-			return baseClass::empty() ? m_end : const_iterator(this,0);
+			return baseClass::empty() ? m_cend : const_iterator(this,0);
 		}
 
 		const_iterator begin() const
@@ -210,22 +194,37 @@ namespace OOBase
 		}
 
 	private:
-		template <typename K1>
-		const T* bsearch(const K1& key) const
+		template <typename T1>
+		const T* bsearch(const T1& value) const
 		{
 			size_t start = 0;
 			for (size_t end = this->m_size;start < end;)
 			{
 				size_t mid = start + (end - start) / 2;
-				if (m_compare(this->m_data[mid],key))
+				if (m_compare(this->m_data[mid],value))
 					start = mid + 1;
-				else if (this->m_data[mid] == key)
+				else if (this->m_data[mid] == value)
 					return &this->m_data[mid];
 				else
 					end = mid;
 			}
 			return NULL;
 		}
+
+		template <typename T1>
+		size_t find_i(const T1& value) const
+		{
+			const T* p = bsearch(value);
+			if (!p || *p != value)
+				return size_t(-1);
+
+			// Scan for the first
+			while (p && p > this->m_data && *(p-1) == value)
+				--p;
+
+			return (p ? static_cast<size_t>(p - this->m_data) : size_t(-1));
+		}
+
 		Compare m_compare;
 
 		iterator m_end;

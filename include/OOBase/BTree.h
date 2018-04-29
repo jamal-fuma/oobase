@@ -45,23 +45,23 @@ namespace OOBase
 			virtual ~BTreeCompareBase()
 			{}
 
-			virtual bool less_than(const K& key) const = 0;
-			virtual bool equal(const K& key) const = 0;
+			virtual bool less_than(typename call_traits<K>::param_type key) const = 0;
+			virtual bool equal(typename call_traits<K>::param_type key) const = 0;
 		};
 
 		template <typename K1, typename K2, typename Compare>
 		class BTreeCompare : public BTreeCompareBase<K1,Compare>
 		{
 		public:
-			BTreeCompare(const Compare& compare, const K2& k) : m_compare(compare), m_key(k)
+			BTreeCompare(const Compare& compare, typename call_traits<K2>::param_type k) : m_compare(compare), m_key(k)
 			{}
 
-			bool less_than(const K1& key) const
+			bool less_than(typename call_traits<K1>::param_type key) const
 			{
 				return m_compare(key,m_key);
 			}
 
-			bool equal(const K1& key) const
+			bool equal(typename call_traits<K1>::param_type key) const
 			{
 				return key == m_key;
 			}
@@ -186,7 +186,7 @@ namespace OOBase
 				return m_pages[page]->find(compare);
 			}
 
-			bool insert_page(BTreeImpl<K,V,Compare,B,Allocator>* tree, baseClass* page, const K& key, size_t insert_pos)
+			bool insert_page(BTreeImpl<K,V,Compare,B,Allocator>* tree, baseClass* page, typename call_traits<K>::param_type key, size_t insert_pos)
 			{
 				if (m_key_count >= B - 1)
 					return split(tree,insert_pos,page,key);
@@ -231,7 +231,7 @@ namespace OOBase
 
 			virtual BTreeInternalPageBase* new_page(BTreeImpl<K,V,Compare,B,Allocator>* tree) = 0;
 
-			bool split(BTreeImpl<K,V,Compare,B,Allocator>* tree, size_t insert_pos, baseClass* child, const K& child_key)
+			bool split(BTreeImpl<K,V,Compare,B,Allocator>* tree, size_t insert_pos, baseClass* child, typename call_traits<K>::param_type child_key)
 			{
 				// Make sure we have a parent
 				if (!this->m_parent)
@@ -323,7 +323,7 @@ namespace OOBase
 				return true;
 			}
 
-			baseClass* const* find_exact(const K& key, const Compare& compare) const
+			baseClass* const* find_exact(typename call_traits<K>::param_type key, const Compare& compare) const
 			{
 				size_t start = 0;
 				for (size_t end = m_key_count;start < end;)
@@ -849,20 +849,20 @@ namespace OOBase
 		public:
 			leaf_page_t* new_leaf(internal_page_t* parent, leaf_page_t* prev, leaf_page_t* next)
 			{
-				BTreeLeafPage<K,V,Compare,B,Allocator>* page = NULL;
-				return Allocator::allocate_new(page,parent,prev,next) ? page : NULL;
+				leaf_page_t* page = NULL;
+				return Allocator::allocate_new_ref(page,parent,prev,next) ? page : NULL;
 			}
 
 			internal_page_t* new_internal_leaf(internal_page_t* parent, leaf_page_t* leaf)
 			{
 				BTreeInternalPageLeaf<K,V,Compare,B,Allocator>* page = NULL;
-				return Allocator::allocate_new(page,parent,leaf) ? page : NULL;
+				return Allocator::allocate_new_ref(page,parent,leaf) ? page : NULL;
 			}
 
 			internal_page_t* new_internal_page(internal_page_t* parent, internal_page_t* internal)
 			{
 				BTreeInternalPageInternal<K,V,Compare,B,Allocator>* page = NULL;
-				return Allocator::allocate_new(page,parent,internal) ? page : NULL;
+				return Allocator::allocate_new_ref(page,parent,internal) ? page : NULL;
 			}
 
 			void destroy_page(base_page_t* page)
@@ -882,13 +882,13 @@ namespace OOBase
 			leaf_page_t* new_leaf(internal_page_t* parent, leaf_page_t* prev, leaf_page_t* next)
 			{
 				leaf_page_t* page = NULL;
-				return m_allocator.allocate_new(page,m_allocator,parent,prev,next) ? page : NULL;
+				return m_allocator.allocate_new_ref(page,m_allocator,parent,prev,next) ? page : NULL;
 			}
 
 			internal_page_t* new_internal_leaf(internal_page_t* parent, leaf_page_t* leaf)
 			{
 				BTreeInternalPageLeaf<K,V,Compare,B,AllocatorInstance>* page = NULL;
-				return m_allocator.allocate_new(page,m_allocator,parent,leaf) ? page : NULL;
+				return m_allocator.allocate_new_ref(page,m_allocator,parent,leaf) ? page : NULL;
 			}
 
 			internal_page_t* new_internal_page(internal_page_t* parent, internal_page_t* internal)
@@ -928,7 +928,7 @@ namespace OOBase
 			BTreeImpl(const BTreeImpl& rhs) : baseClass(rhs), m_compare(rhs.m_compare), m_root_page(NULL), m_head(NULL), m_tail(NULL)
 			{
 				if (!insert(rhs.begin(),rhs.end()))
-					OOBase_CallCriticalFailure(ERROR_OUTOFMEMORY);
+					OOBase_CallCriticalFailure(system_error());
 			}
 
 			~BTreeImpl()
@@ -987,7 +987,7 @@ namespace OOBase
 		BTree(const BTree& rhs) : baseClass(rhs)
 		{
 			if (!insert(rhs.begin(),rhs.end()))
-				OOBase_CallCriticalFailure(ERROR_OUTOFMEMORY);
+				OOBase_CallCriticalFailure(system_error());
 		}
 
 		BTree& operator = (const BTree& rhs)
@@ -1019,7 +1019,7 @@ namespace OOBase
 			return this->m_root_page->insert(this,value);
 		}
 
-		bool insert(const K& key, const V& value)
+		bool insert(typename call_traits<K>::param_type key, typename call_traits<V>::param_type value)
 		{
 			return insert(OOBase::make_pair(key,value));
 		}
@@ -1033,7 +1033,7 @@ namespace OOBase
 		template <typename K1>
 		bool exists(const K1& key) const
 		{
-			return (find_i(key) != NULL);
+			return (find_i<K1>(key) != NULL);
 		}
 
 		size_t size() const

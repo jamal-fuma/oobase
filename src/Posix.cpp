@@ -23,6 +23,7 @@
 
 #include "../include/OOBase/Posix.h"
 #include "../include/OOBase/String.h"
+#include "../include/OOBase/Random.h"
 
 #if defined(HAVE_UNISTD_H)
 
@@ -251,7 +252,7 @@ int OOBase::POSIX::close_file_descriptors(int* except, size_t ex_count)
 	return 0;
 }
 
-int OOBase::POSIX::random_bytes(void* buffer, size_t len)
+int OOBase::random_bytes(void* buffer, size_t len)
 {
 	OOBase::POSIX::SmartFD fd(OOBase::POSIX::open("/dev/urandom",O_RDONLY));
 	if (!fd.valid())
@@ -270,32 +271,11 @@ int OOBase::POSIX::random_bytes(void* buffer, size_t len)
 	return 0;
 }
 
-int OOBase::POSIX::random_chars(char* buffer, size_t len)
-{
-	static const char c[] = "ABCDEFGHIJKLMNOPQRSTUVWXYUZabcdefghijklmnopqrstuvwxyz0123456789";
-
-	if (len)
-		buffer[--len] = '\0';
-
-	while (len)
-	{
-		unsigned char buf[128] = {0};
-		int err = random_bytes(buf,sizeof(buf));
-		if (err)
-			return err;
-
-		for (size_t i = 0;i < sizeof(buf) && len;)
-			buffer[--len] = c[buf[i++] % (sizeof(c)-1)];
-	}
-
-	return 0;
-}
-
 OOBase::POSIX::pw_info::pw_info(uid_t uid) : m_pwd(NULL)
 {
 	size_t size = get_size();
 	if (!m_data.resize(size))
-		OOBase_CallCriticalFailure(ERROR_OUTOFMEMORY);
+		OOBase_CallCriticalFailure(system_error());
 
 	int err = 0;
 	do
@@ -311,7 +291,7 @@ OOBase::POSIX::pw_info::pw_info(const char* uname) : m_pwd(NULL)
 {
 	size_t size = get_size();
 	if (!m_data.resize(size))
-		OOBase_CallCriticalFailure(ERROR_OUTOFMEMORY);
+		OOBase_CallCriticalFailure(system_error());
 
 	int err = 0;
 	do
